@@ -1,0 +1,147 @@
+<html>
+<body bgcolor="black" style="margin: 0; padding: 0;">
+<style>
+    canvas {
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+}
+</style>
+<div style="margin: auto;">
+    <canvas id="myCanvas" width="1400" height="800"></canvas>
+</div>
+<script>
+const width = 1400;
+const halfWidth = width / 2;
+const height = 800;
+const horizon = 550;
+const area = height - horizon;
+const drawHorizon = (context) => {
+    context.shadowBlur = 20;
+    context.strokeStyle = "white";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(0, horizon);
+    context.lineTo(width, horizon);
+    context.stroke();
+}
+const drawVertLines = (context, numLines) => {
+    context.shadowBlur = 10;
+    const xCoordinates = [...Array(numLines)].map((x, i) => {
+        const x1 = i * (width / numLines);
+        const x2 = x1 - ((halfWidth - x1) * Math.abs(3 * (halfWidth - x1) / halfWidth));
+        return [x1, x2]
+    })
+    context.strokeStyle = "gray";
+    context.lineWidth = 1;
+
+    xCoordinates.forEach(([x1, x2]) => {
+        context.beginPath();
+        context.moveTo(x1, horizon);
+        context.lineTo(x2, height);
+        context.stroke();
+    })
+}
+
+const maxHorizonLines = 3;
+const horizLines = [];
+
+const generateHorizLine = () => {
+    return {
+        y: horizon,
+        velocity: 0
+    }
+}
+
+const populateHorizonLines = (lines, maxLines) => {
+    const id = setInterval(() => {
+        lines.push(generateHorizLine());
+        if (lines.length === maxLines) {
+            clearInterval(id);
+        }
+    }, 500);
+}
+
+const drawHorizLines = (context, lines) => {
+    context.shadowBlur = 10;
+    lines.forEach((line) => {
+        line.velocity = Math.exp(((line.y - horizon)/area) * 3);
+        line.y = line.y + line.velocity;
+        if (line.y > height) {
+            line.y = horizon;
+            line.velocity = 0;
+        }
+        const percent = ((line.y - horizon) / area);
+        const red = Math.floor(percent * 255);
+        const green = Math.floor(percent * 128);
+        const blue = Math.floor(percent * 128 + 127);
+        //console.log(red, green, blue);
+        context.lineWidth = (2 * percent) + 1;
+        context.strokeStyle = `rgb(${red},${green},${blue})`;
+        context.shadowColor = `rgb(${red},${green},${blue})`;
+        context.beginPath();
+        context.moveTo(0, line.y);
+        context.lineTo(width, line.y);
+        context.stroke();
+    })
+}
+
+function generateStar () {
+    context.shadowBlur = 10;
+    const star = {}
+    star.x = -halfWidth + Math.random()*width;
+    star.y = Math.random() * 200;
+    const howFarOut = 1 - ((halfWidth - Math.abs(star.x)) / halfWidth);
+    const vel = 1 * howFarOut;
+    const xDirection = star.x > 0 ? 1 : -1;
+    const yDirection = star.y > 100 ? 1 : -1;
+    star.vx= Math.random() * vel * xDirection;
+    star.vy = Math.random() * -2;
+    return star;
+}
+
+let init = false;
+function animate() {
+    if (stars.length<600&&Math.random()<.3){ // if fewer than 300 stars, a 50% chance of creating a new one
+        stars.push(generateStar()); // add the star to the array
+    }
+    context.clearRect(0, 0, canvas.width, canvas.height); // clear the frame
+    context.shadowColor = "white"; // string
+    context.shadowOffsetX = 0; // integer
+    context.shadowOffsetY = 0; // integer
+    context.shadowBlur = 10;
+
+    if (!init) {
+        populateHorizonLines(horizLines, maxHorizonLines);
+        init = true;
+    }
+    drawVertLines(context, 10);
+    drawHorizLines(context, horizLines);
+        drawHorizon(context);
+    for(let n=0;n<stars.length;n++){ // for each star
+        stars[n].x=stars[n].x+stars[n].vx; // add the velocity to the current position
+        stars[n].y=stars[n].y+stars[n].vy; // in both axles
+        if(stars[n].x>halfWidth||stars[n].x<-halfWidth){ // if the star is out of bounds
+            stars[n] = generateStar();
+        }
+        color=Math.floor((Math.abs(stars[n].x)+Math.abs(stars[n].y))/5);
+        context.fillStyle = 'rgb('+color+','+color+','+color+')'; // use the color value for the R, G and B component
+        context.shadowColor = 'rgb('+color+','+color+','+color+')'
+        context.shadowBlur = ((horizon - stars[n].y)/horizon) * 10;
+        context.beginPath();
+        context.arc(halfWidth+stars[n].x, horizon+stars[n].y, Math.abs(stars[n].y/100), 0, 2 * Math.PI); // draw a circle
+        context.fill();
+        context.shadowBlur = 0;
+    }
+    window.requestAnimationFrame(animate); // request another animation frame
+}
+
+let canvas = document.getElementById('myCanvas');
+let context = canvas.getContext('2d');
+let stars=[]; // the array of stars
+window.requestAnimationFrame(animate); // initialize the animation
+</script>
+</body>
+</html>
